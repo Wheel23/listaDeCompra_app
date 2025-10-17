@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView,
-         ActivityIndicator, Button, Modal, TextInput, TouchableOpacity } from "react-native";
+import {
+  View, Text, StyleSheet, ScrollView,
+  ActivityIndicator, Modal, TextInput, TouchableOpacity
+} from "react-native";
 
 export default function ConsultarProdutos() {
   const [produte, setProdute] = useState([]);
-  const [modalEditar,setModalEditar] = useState(false);
-  const [modalDeletar,setModalDeletar] = useState(false);
-  const [produteDeletar,setProduteDeletar] = useState(null);
-  const [produteEditar,setProduteEditar] = useState(null);
+  const [modalEditar, setModalEditar] = useState(false);
+  const [modalDeletar, setModalDeletar] = useState(false);
+  const [produteDeletar, setProduteDeletar] = useState(null);  // armazenar id do produto para deletar
+  const [produteEditar, setProduteEditar] = useState({});      // objeto para editar
   const [loading, setLoading] = useState(true);
-
 
   const API_URL = "https://68f0ea200b966ad50034b1ff.mockapi.io/api/v1/produtos";
 
@@ -41,26 +42,46 @@ export default function ConsultarProdutos() {
     );
   }
 
-  const deletarProdute = () => {
-    fetch(`${API_URL}?placa=${produteDeletar}`, {
+  // Função para deletar produto pelo id
+  const deletarProduto = () => {
+    fetch(`${API_URL}/${produteDeletar}`, {
       method: "DELETE",
-      headers:{
-        "Content-Type": "application/json",	
-        "Authorization": API_KEY
+      headers: {
+        "Content-Type": "application/json",
       }
-      
     })
-    .then(res => res.json())
-    .then(() => {
-      alert('Veículo deletado com sucesso!');
-      setProdute(produte.filter(v => v.placa !== veiculoDeletar));
-      setModalDeletar(false);
-      setVeiculoDeletar(null);
+      .then(res => res.json())
+      .then(() => {
+        alert('Produto deletado com sucesso!');
+        setProdute(produte.filter(p => p.id !== produteDeletar));
+        setModalDeletar(false);
+        setProduteDeletar(null);
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Erro ao deletar Produto.');
+      });
+  }
+
+  // Função para salvar alterações do produto editado
+  const salvarAlteracoes = () => {
+    console.log(produteEditar.codProduto)
+    fetch(`${API_URL}/${produteEditar.codProduto}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(produteEditar)
     })
-    .catch(err => {
-      console.error(err);
-      alert('Erro ao deletar veículo.');
-    });
+      .then(res => res.json())
+      .then(() => {
+        alert('Produto editado com sucesso!');
+        setModalEditar(false);
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Erro ao editar produto.');
+      });
   }
 
   return (
@@ -69,18 +90,23 @@ export default function ConsultarProdutos() {
         <Text>Nenhum produto encontrado.</Text>
       ) : (
         produte.map((p, index) => (
-          <View key={index} style={styles.card}>
+          <View key={p.id} style={styles.card}>
             <Text style={styles.text}><Text style={styles.bold}>Nome Produto:</Text> {p.produto}</Text>
-            <Text style={styles.text}><Text style={styles.bold}>Descricao:</Text> {p.produto_desc}</Text>
+            <Text style={styles.text}><Text style={styles.bold}>Descrição:</Text> {p.produto_desc}</Text>
             <Text style={styles.text}><Text style={styles.bold}>Valor:</Text> {p.produto_price}</Text>
-           
 
             <View style={styles.btnGroup}>
-              <TouchableOpacity style={styles.btnEditar} onPress={() => {setModalEditar(true); setProduteEditar(...p); alert(produteEditar)}}>
+              <TouchableOpacity style={styles.btnEditar} onPress={() => {
+                setModalEditar(true);
+                setProduteEditar(p);  // passa o objeto completo para editar
+              }}>
                 <Text style={styles.btnText}>✏️ Editar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.btnDeletar} onPress={() => {setModalDeletar(true); setProduteDeletar(p.produto)}}>
+              <TouchableOpacity style={styles.btnDeletar} onPress={() => {
+                setModalDeletar(true);
+                setProduteDeletar(p.codProduto);  // passa o id para deletar
+              }}>
                 <Text style={styles.btnText}>🗑️ Deletar</Text>
               </TouchableOpacity>
             </View>
@@ -88,17 +114,33 @@ export default function ConsultarProdutos() {
         ))
       )}
 
+      {/* Modal para editar produto */}
       <Modal visible={modalEditar} animationType="slide">
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Editar Produto</Text>
 
-          <TextInput style={styles.input} placeholder="Produto" onChangeText={(texto)=> setProduteEditar(texto)}/>
-          <TextInput style={styles.input} placeholder="Descrição"  onChangeText={(texto)=> setProduteEditar(texto)} />
-          <TextInput style={styles.input} placeholder="Valor" onChangeText={(texto)=> setProduteEditar(texto)} />
-          
-          <TouchableOpacity style={styles.btnEditar} onPress={() => alert('Função de salvar alterações ainda não implementada')}>
-            <Text style={styles.btnText}>Salvar Alterações</Text>
+          <TextInput
+            style={styles.input}
+            value={produteEditar.produto}
+            onChangeText={(texto) => setProduteEditar({ ...produteEditar, produto: texto })}
+            placeholder="Produto Nome"
+          />
+          <TextInput
+            style={styles.input}
+            value={produteEditar.produto_desc}
+            onChangeText={(texto) => setProduteEditar({ ...produteEditar, produto_desc: texto })}
+            placeholder="Descrição"
+          />
+          <TextInput
+            style={styles.input}
+            value={produteEditar.produto_price}
+            onChangeText={(texto) => setProduteEditar({ ...produteEditar, produto_price: texto })}
+            placeholder="Valor"
+            keyboardType="numeric"
+          />
 
+          <TouchableOpacity style={styles.btnEditar} onPress={salvarAlteracoes}>
+            <Text style={styles.btnText}>Salvar Alterações</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setModalEditar(false)} style={styles.btnDeletar}>
@@ -107,16 +149,21 @@ export default function ConsultarProdutos() {
         </View>
       </Modal>
 
-      <Modal visible={modalDeletar} animationType="slide">
-        <View style={styles.modalContainer}>
-         <Text style={styles.modalTitle}>Tem certeza que quer excluir Produto de nome: {produteDeletar}?</Text>
-          <TouchableOpacity onPress={produteDeletar} style={styles.btnDeletar}>
-            <Text>Sim</Text>
-          </TouchableOpacity>
+      {/* Modal para confirmar deleção */}
+      <Modal visible={modalDeletar} animationType="slide" transparent={true}>
+        <View style={[styles.modalContainer, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center' }]}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 20 }}>
+            <Text style={styles.modalTitle}>Tem certeza que quer excluir o produto?</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 }}>
+              <TouchableOpacity onPress={deletarProduto} style={[styles.btnDeletar, { flex: 1, marginRight: 10 }]}>
+                <Text style={styles.btnText}>Sim</Text>
+              </TouchableOpacity>
 
-         <TouchableOpacity onPress={() => setModalDeletar(false)}>
-            <Text style={styles.btnCancelar}>Cancelar</Text>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModalDeletar(false)} style={[styles.btnCancelar, { flex: 1 }]}>
+                <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold' }}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </ScrollView>
@@ -124,12 +171,11 @@ export default function ConsultarProdutos() {
 }
 
 const styles = StyleSheet.create({
-  btnCancelar:{
+  btnCancelar: {
     backgroundColor: "#6c757d",
     padding: 10,
     borderRadius: 8,
-    marginTop:10,
-    
+    marginTop: 10,
   },
   container: {
     padding: 20,
