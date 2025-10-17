@@ -15,6 +15,10 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        
+        <Stack.Screen name="consultaLC" options={{ headerShown: true, title:"Produtos cadastrados" }} />
+        <Stack.Screen name="cadastroLC" options={{ headerShown: true, title:"Cadastrar produtos" }} />
+        <Stack.Screen name="index" options={{ headerShown: false, title:"Início" }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
